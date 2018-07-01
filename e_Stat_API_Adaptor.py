@@ -11,19 +11,8 @@
 
 import os
 import subprocess
-import unicodedata
-import urllib2
 import json
 import csv
-import re
-import StringIO
-import random
-import numpy
-import math
-import pandas as pd
-from flask import request
-from flask import Response
-from flask import Flask
 
 
 class e_Stat_API_Adaptor:
@@ -40,39 +29,17 @@ class e_Stat_API_Adaptor:
 
             # 全ての統計IDを含むJSONファイルのパス
             'statid-json': self._['directory'] + 'dictionary/all.json.dic',
-            'dictionary-index': self._['directory'] + 'dictionary/index.list.dic',
-
-            # ユーザーindex
-            'dictionary-user': self._['directory'] + 'dictionary/user.csv.dic',
-
-            # 統計センターindex
-            'dictionary-stat-center': self._['directory'] + 'dictionary/stat.center.csv.dic',
-
-            # 統計センターindexのダウンロード用URL
-            'url-dictionary-stat-center': 'http://www.e-stat.go.jp/api/sample2/api-m/stat-center-index.csv',
-
-            # 詳細(n-gram形式)
-            'dictionary-detail': self._['directory'] + 'dictionary/detail/',
-
-            # 公開ディレクトリ
-            'http-public': '/'
-        }
-        self.msg = {
-            'check-extension': 'Oops! check your extension!'
+            'dictionary-index': self._['directory'] + 'dictionary/index.list.dic'
         }
         self.url = {
             'host': 'http://api.e-stat.go.jp', 'path': '/'.join([
                 'rest', self._['ver'], 'app', 'json', 'getStatsData'
             ])
         }
-        self.csv_header = {
-            'index': ['statsDataId', '調査名', '調査年月', '組織名', 'カテゴリー'], 'user': ['statsDataId', '検索語']
-        }
+
         self.header = {'Access-Control-Allow-Origin': '*'}
         self.random_str = 'ABCDEFGHIJKLMNOPQRTSUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
         self.cache = {}
-        # N-グラムの設定
-        self.gram = 2
 
     # ファイル保存先のディレクトリが無ければ作成する
     def make_dir(self, filename):
@@ -109,58 +76,6 @@ class e_Stat_API_Adaptor:
             f.write(rows)
         return rows
 
-    # 統計センターが作成するindexのダウンロード用関数
-
-    def load_stat_center_index(self):
-        self.cmd_line(self.build_cmd([
-            'curl', '-o', self.path['dictionary-stat-center'], '"' +
-                                                               self.path['url-dictionary-stat-center'] + '"'
-        ]))
-
-    def build_detailed_index(self):
-        jd = self.load_json(
-            self.path['statid-json'])['GET_STATS_LIST']['DATALIST_INF']['TABLE_INF']
-        for i, j in enumerate(jd):
-
-            filename = '-'.join([
-                j['@id'], j['STAT_NAME']['$'], str(j['SURVEY_DATE']), j['GOV_ORG']['$'], j[
-                    'MAIN_CATEGORY']['$'], j['SUB_CATEGORY']['$']
-            ]) + '.dic'
-            try:
-                STATISTICS_NAME = self.create_n_gram_str(
-                    j['STATISTICS_NAME'], self.gram)
-            except:
-                STATISTICS_NAME = ''
-            try:
-                TITLE = self.create_n_gram_str(j['TITLE']['$'], self.gram)
-            except:
-                TITLE = ''
-
-            self.make_dir(self.path['dictionary-detail'])
-
-            with open(self.path['dictionary-detail'] + filename, 'w') as f:
-                f.write(
-                    '\n'.join([STATISTICS_NAME.encode('utf-8'), TITLE.encode('utf-8')]))
-
-    def create_n_gram_str(self, str, gram):
-        str = unicodedata.normalize('NFKC', str)
-        str = re.sub('[\s\(\)-,\[\]]', '', str).replace(u'・', '')
-        return ','.join([v for v in [str[str.index(s):str.index(s) + gram] for s in str] if v is not ''])
-
-    def search_detailed_index(self, q):
-        detail_files = os.listdir(self.path['dictionary-detail'])
-        detail_index = []
-        for dic in detail_files:
-            with open(self.path['dictionary-detail'] + dic, 'r') as f:
-                for row in f.readlines():
-                    if q in row:
-                        detail_index.append(','.join([dic.split('-')[0], q]))
-        return detail_index
-
-    def create_user_index_from_detailed_index(self, q):
-        with open(self.path['dictionary-user'], 'a') as f:
-            f.write('\n'.join(self.search_detailed_index(q)) + '\n')
-
     def build_uri(self, param):
         return '?'.join([
             '/'.join([self.url['host'], self.url['path']]
@@ -179,25 +94,6 @@ class e_Stat_API_Adaptor:
     def load_json(self, path):
         with open(path) as json_data:
             return json.load(json_data)
-
-    def search_id(self, q, _index, _header='index'):
-        if q == 'index':
-            rows = [[c for c in f.split('-') if '.dic' not in c]
-                    for f in self.cmd_line(self.build_cmd(['cat', _index])).split('\n')]
-        else:
-            print '171 q:', q, '_index', _index
-            test = self.cmd_line('cat ' + _index + ' | ' + 'grep -n \"' + q + '\"')
-            print test
-            output = self.cmd_line('cat ' + _index + ' | ' + 'grep -n \"' + q + '\"').split('\n')
-            rows = [[c if i > 0 else c.split(
-                ':')[-1] for i, c in enumerate(f.split('-')) if '.dic' not in c] for f in output]
-        for i, r in enumerate(rows):
-            if len(r) == 6:
-                rows[i][2] = rows[i][2] + '-' + rows[i][3]
-                del rows[i][3]
-            rows[i] = ','.join(rows[i])
-        rows = '\n'.join([','.join(self.csv_header[_header]), '\n'.join(rows)])
-        return rows
 
     def get_all_data(self, statsDataId, next_key):
         self.cache['tmp'] = self.path['tmp'] + '.'.join([self._['appId'], statsDataId, next_key, 'json'])
@@ -291,51 +187,6 @@ class e_Stat_API_Adaptor:
             if os.path.exists(filepath):
                 self.cmd_line(self.build_cmd(['rm', filepath]))
 
-    def merge_data(self, statsDataId, group_by, aggregate):
-        statsDataId = statsDataId.split(',')
-        data = {}
-        for id in statsDataId:
-            csv_path = self.path['csv'] + id + '.csv'
-            if os.path.exists(csv_path) == False:
-                self.get_all_data(id, '1')
-                self.convert_raw_json_to_csv(id)
-            data[id] = pd.read_csv(csv_path, skiprows=[0])
-            data[id]['stat-id'] = id
-        for k, v in data.items():
-            v.rename(columns=lambda x: x.replace('$', '$' + k), inplace=True)
-        data = pd.concat([v for k, v in data.items()], ignore_index=True)
-        if group_by != 'all':
-            # summation
-            if aggregate == 'sum':
-                data = data.groupby(group_by.split(',')).sum()
-            # min
-            elif aggregate == 'min':
-                data = data.groupby(group_by.split(',')).min()
-            # max
-            elif aggregate == 'max':
-                data = data.groupby(group_by.split(',')).max()
-            # median
-            elif aggregate == 'median':
-                data = data.groupby(group_by.split(',')).median()
-            # count
-            elif aggregate == 'count':
-                data = data.groupby(group_by.split(',')).count()
-            # variance
-            elif aggregate == 'var':
-                data = data.groupby(group_by.split(',')).var()
-            # standard deviation
-            elif aggregate == 'std':
-                data = data.groupby(group_by.split(',')).std()
-            # mean
-            elif aggregate == 'mean':
-                data = data.groupby(group_by.split(',')).mean()
-            else:
-                data = data
-        if group_by != 'all':
-            data = data.loc[:, [c for c in data.columns if '$' in c or group_by in c]
-                   ] if aggregate == '' else data.loc[:, [c for c in data.columns if '$' in c]]
-        return data.reset_index()
-
     def remove_file(self, filepath):
         self.cmd_line(self.build_cmd([
             'rm', filepath
@@ -343,7 +194,7 @@ class e_Stat_API_Adaptor:
 
     def get_csv(self, cmd, statsDataId):
         cmd = 'cat' if cmd == 'get' else cmd
-        print('get csv file: {}'.format(self.path['csv'] + statsDataId + '.csv'))
+        # print('get csv file: {}'.format(self.path['csv'] + statsDataId + '.csv'))
         self.cache['csv'] = self.path['csv'] + statsDataId + '.csv'
 
         if os.path.exists(self.cache['csv']) == False:
@@ -363,43 +214,3 @@ class e_Stat_API_Adaptor:
 
     def error(self, txt):
         return txt
-
-    def get_output(self, data, output_type):
-        def get_tmp_data(tmp_data_0_j, tmp_data_i_j):
-            if re.match('^\$[0-9]+$', tmp_data_0_j) or tmp_data_0_j == '$':
-                return float(tmp_data_i_j) if tmp_data_i_j != '' else None
-            else:
-                return tmp_data_i_j
-
-        if output_type == 'csv':
-            return data
-        elif output_type == 'rjson':
-            tmp_data = [d for d in csv.reader(StringIO.StringIO(data.strip()))]
-            data = []
-            for i in range(1, len(tmp_data)):
-                row_data = {}
-                for j in range(0, len(tmp_data[i])):
-                    row_data[tmp_data[0][j]] = get_tmp_data(
-                        tmp_data[0][j], tmp_data[i][j])
-                data.append(row_data)
-            return json.dumps(data)
-        elif output_type == 'cjson':
-            tmp_data = [d for d in csv.reader(StringIO.StringIO(data.strip()))]
-            print tmp_data[0]
-            data = {}
-            for i in range(0, len(tmp_data[0])):
-                print tmp_data[0][i]
-                data[tmp_data[0][i]] = [get_tmp_data(tmp_data[0][i], tmp_data[j][
-                    i]) for j in range(1, len(tmp_data))]
-            return json.dumps(data)
-        else:
-            return self.error(self.msg['check-extension'])
-
-    def mimetype(self, ext):
-        mt = 'text/plain' if ext == 'csv' else 'application/json'
-        mt = 'application/octet-stream' if request.args.get(
-            'dl') == 'true' else mt
-        return mt
-
-    def response(self, res, ext):
-        return Response(res, mimetype=self.mimetype(ext), headers=self.header)

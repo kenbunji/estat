@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from tqdm import tqdm
 
 import e_Stat_API_Adaptor
 
@@ -30,5 +31,6 @@ def download():
     rows = eStatAPI.build_statid_index()
 
     # データのダウンロード
-    for r in rows.split('\n'):
+    print('getting csv files')
+    for r in tqdm(rows.split('\n')):
         eStatAPI.get_csv('get', r.split('-')[0])
