@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+
 from tqdm import tqdm
 
 import e_Stat_API_Adaptor
@@ -7,8 +8,8 @@ import e_Stat_API_Adaptor
 
 def download():
     print('Please input the appID')
-    # appId = raw_input('>>> ')
-    appId = 'd1800b6f8e42765cc996a61aac4bd070e4429860'
+    appId = raw_input('>>> ')
+
     eStatAPI = e_Stat_API_Adaptor.e_Stat_API_Adaptor({
         # 取得したappId
         'appId': appId

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import estat
+from estat import estat
 
 estat.download()

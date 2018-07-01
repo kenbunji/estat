@@ -3,3 +3,4 @@
 # directories
 estat.egg-info/
 .idea/
+dist/
