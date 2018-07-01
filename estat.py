@@ -34,3 +34,4 @@ def download():
     print('getting csv files')
     for r in tqdm(rows.split('\n')):
         eStatAPI.get_csv('get', r.split('-')[0])
+    print('csv files are stored to {}.'.format(eStatAPI.path['csv']))

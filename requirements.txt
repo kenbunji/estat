@@ -1,4 +1,5 @@
 flask
 numpy
 pandas
+six
 tqdm

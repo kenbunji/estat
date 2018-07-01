@@ -9,11 +9,11 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # #
 
-import os
-import subprocess
-import json
 import csv
-
+import json
+import os
+import six
+import subprocess
 
 class e_Stat_API_Adaptor:
     def __init__(self, _):
@@ -65,13 +65,26 @@ class e_Stat_API_Adaptor:
     def build_statid_index(self):
         jd = self.load_json(
             self.path['statid-json'])['GET_STATS_LIST']['DATALIST_INF']['TABLE_INF']
-        rows = '\n'.join([
-            '-'.join([
-                j['@id'], j['STAT_NAME']['$'], str(j['SURVEY_DATE']), j['GOV_ORG']['$'], j[
-                    'MAIN_CATEGORY']['$'], j['SUB_CATEGORY']['$']
-            ]) + '.dic'
-            for j in jd
-        ]).encode('utf-8')
+
+        if six.PY2:
+            # Python 2
+            rows = '\n'.join([
+                '-'.join([
+                    j['@id'], j['STAT_NAME']['$'], str(j['SURVEY_DATE']), j['GOV_ORG']['$'], j[
+                        'MAIN_CATEGORY']['$'], j['SUB_CATEGORY']['$']
+                ]) + '.dic'
+                for j in jd
+            ]).encode('utf-8')
+        else:
+            # Python 3
+            rows = '\n'.join([
+                '-'.join([
+                    j['@id'], j['STAT_NAME']['$'], str(j['SURVEY_DATE']), j['GOV_ORG']['$'], j[
+                        'MAIN_CATEGORY']['$'], j['SUB_CATEGORY']['$']
+                ]) + '.dic'
+                for j in jd
+            ])
+
         with open(self.path['dictionary-index'], 'w') as f:
             f.write(rows)
         return rows
@@ -86,10 +99,10 @@ class e_Stat_API_Adaptor:
         return ' '.join(cmd_list)
 
     def cmd_line(self, cmd):
-        try:
+        # try:
             return subprocess.check_output(cmd, shell=True)
-        except:
-            return None
+        # except:
+        #     return None
 
     def load_json(self, path):
         with open(path) as json_data:
@@ -136,11 +149,9 @@ class e_Stat_API_Adaptor:
                 ).split('\n')
                 if f != ''
             ]
-            # print ix
             ix.sort()
             ix = [hash.values()[0] for hash in ix]
             for i, json_file in enumerate(ix):
-                # print i, json_file
                 jd = self.load_json(json_file)
                 if i == 0:
                     dat['header'] = [
@@ -194,7 +205,6 @@ class e_Stat_API_Adaptor:
 
     def get_csv(self, cmd, statsDataId):
         cmd = 'cat' if cmd == 'get' else cmd
-        # print('get csv file: {}'.format(self.path['csv'] + statsDataId + '.csv'))
         self.cache['csv'] = self.path['csv'] + statsDataId + '.csv'
 
         if os.path.exists(self.cache['csv']) == False:
@@ -210,7 +220,4 @@ class e_Stat_API_Adaptor:
         ])) if cmd == 'cat' or cmd == 'head' else self.cmd_line(self.build_cmd([
             cmd, self.cache['csv']
         ]))
-        return txt
-
-    def error(self, txt):
         return txt
