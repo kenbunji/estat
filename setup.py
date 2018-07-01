@@ -36,7 +36,8 @@ setup(
     description='Download data from Japanese Government Statistics and save it as CSV format files',
     long_description=readme,
     # packages=find_packages(),
-    install_requires=_requires_from_file('requirements.txt'),
+    # install_requires=_requires_from_file('requirements.txt'),
+    install_requires=["flask", "numpy", "pandas", "six", "tqdm"],
     license="MIT",
     classifiers=[
         'Programming Language :: Python :: 2',
