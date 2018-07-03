@@ -6,7 +6,10 @@ from tqdm import tqdm
 import e_Stat_API_Adaptor
 
 
-def download():
+def download(directory=os.environ['HOME'] + '/estat/'):
+    if (directory[-1:] != '/'):
+        directory += '/'
+
     print('Please input the e-Stat appID. You can get the appID from e-Stat website: https://www.e-stat.go.jp/')
     appId = raw_input('appID> ')
 
@@ -19,7 +22,7 @@ def download():
         # 対応時はTrue/非対応時はFalse
         , 'next_key': True
         # 中間アプリの設置ディレクトリ
-        , 'directory': os.environ['HOME'] + '/estat/'
+        , 'directory': directory
         # APIのバージョン
         , 'ver': '2.0'
     })

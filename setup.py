@@ -5,15 +5,18 @@ import os
 
 from setuptools import setup, find_packages
 
-try:
-    with open('README.rst') as f:
-        readme = f.read()
-except IOError:
-    readme = ''
-
 
 def _requires_from_file(filename):
     return open(filename).read().splitlines()
+
+
+def read_file(filename):
+    basepath = os.path.dirname(os.path.dirname(__file__))
+    filepath = os.path.join(basepath, filename)
+    if os.path.exists(filepath):
+        return open(filepath).read()
+    else:
+        return ''
 
 
 # version
@@ -25,16 +28,24 @@ version = next((line.split('=')[1].strip().replace("'", '')
                 if line.startswith('__version__ = ')),
                '0.0.dev0')
 
+LONG_DESC = ''
+try:
+    import pypandoc
+
+    LONG_DESC = pypandoc.convert('README.md', 'rst', format='markdown_github')
+except (IOError, ImportError):
+    LONG_DESC = read_file('README.md')
+
 setup(
     name="estat",
     version=version,
-    url='https://github.com/bunjiken/estat',
+    url='https://github.com/kenbunji/estat',
     author='kenbunji',
     author_email='kenbunji@gmail.com',
     maintainer='kenbunji',
     maintainer_email='kenbunji@gmail.com',
     description='Download data from Japanese Government Statistics and save it as CSV format files',
-    long_description=readme,
+    long_description=LONG_DESC,
     # packages=find_packages(),
     # install_requires=_requires_from_file('requirements.txt'),
     install_requires=["flask", "numpy", "pandas", "six", "tqdm"],
