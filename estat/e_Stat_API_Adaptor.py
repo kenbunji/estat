@@ -15,6 +15,7 @@ import os
 import six
 import subprocess
 
+
 class e_Stat_API_Adaptor:
     def __init__(self, _):
         # アプリ設定
@@ -63,6 +64,15 @@ class e_Stat_API_Adaptor:
     # ダウンロードした統計表からインデックスファイルを作成する
 
     def build_statid_index(self):
+        result_jd = self.load_json(
+            self.path['statid-json'])['GET_STATS_LIST']['RESULT']
+        print('Under download all ids, status code: {0} and message : {1}'.format(result_jd['STATUS'],
+                                                                                  result_jd['ERROR_MSG'].encode(
+                                                                                      'utf-8')))
+        if result_jd['STATUS'] != 0:
+            print('Error detected in loading all ids. Check appID.')
+            return None
+
         jd = self.load_json(
             self.path['statid-json'])['GET_STATS_LIST']['DATALIST_INF']['TABLE_INF']
 
@@ -100,7 +110,7 @@ class e_Stat_API_Adaptor:
 
     def cmd_line(self, cmd):
         # try:
-            return subprocess.check_output(cmd, shell=True)
+        return subprocess.check_output(cmd, shell=True)
         # except:
         #     return None
 

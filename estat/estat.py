@@ -7,8 +7,8 @@ import e_Stat_API_Adaptor
 
 
 def download():
-    print('Please input the appID')
-    appId = raw_input('>>> ')
+    print('Please input the e-Stat appID. You can get the appID from e-Stat website: https://www.e-stat.go.jp/')
+    appId = raw_input('appID> ')
 
     eStatAPI = e_Stat_API_Adaptor.e_Stat_API_Adaptor({
         # 取得したappId
@@ -30,6 +30,9 @@ def download():
     # ダウンロードした統計表IDからインデックスを作成
     print('indexing IDs...')
     rows = eStatAPI.build_statid_index()
+    if rows is None:
+        print('Error detected. Exit program.')
+        return
 
     # データのダウンロード
     print('getting csv files')
