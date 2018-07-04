@@ -3,7 +3,7 @@
 # # # # # # # # # # # # # # # # # # # # # # # #
 #
 #  e-Stat API Adaptor rev
-#  Arrange
+#  Arrange kenbunji
 #  Original (c) 2016 National Statistics Center
 #  License: MIT
 #
@@ -21,6 +21,7 @@ import subprocess
 
 from builtins import bytes
 from builtins import dict
+from builtins import str
 
 
 class e_Stat_API_Adaptor:
@@ -45,32 +46,27 @@ class e_Stat_API_Adaptor:
             ])
         }
 
-        self.header = {'Access-Control-Allow-Origin': '*'}
-        self.random_str = 'ABCDEFGHIJKLMNOPQRTSUVWXYZabcdefghijklmnopqrstuvwxyz1234567890'
         self.cache = {}
 
-    # ファイル保存先のディレクトリが無ければ作成する
     def make_dir(self, filename):
+        """ファイル保存先のディレクトリが無ければ作成する"""
         path = os.path.dirname(filename)
         if not os.path.isdir(path):
-            print('make directory ' + path)
+            print('Make directory: {}'.format(path))
             os.makedirs(path)
 
-    # 全ての統計IDをダウンロード
-
     def load_all_ids(self):
+        """全ての統計IDをダウンロード"""
         load_uri = self.build_uri({
             'appId': self._['appId'], 'searchWord': ''
         }).replace('getStatsData', 'getStatsList')
-        # 全ての統計ID（json形式）を保存するディレクトリを作成する
-        self.make_dir(self.path['statid-json'])
+        self.make_dir(self.path['statid-json'])  # 全ての統計ID（json形式）を保存するディレクトリを作成する
         self.cmd_line(self.build_cmd([
             'curl', '-o', self.path['statid-json'], '"' + load_uri + '"'
         ]))
 
-    # ダウンロードした統計表からインデックスファイルを作成する
-
     def build_statid_index(self):
+        """ダウンロードした統計表からインデックスファイルを作成する"""
         result_jd = self.load_json(self.path['statid-json'])['GET_STATS_LIST']['RESULT']
         print('Tried downloading all ids. Status code: {0} and message : {1}'.format(result_jd['STATUS'],
                                                                                      result_jd['ERROR_MSG']))
@@ -115,12 +111,14 @@ class e_Stat_API_Adaptor:
 
     def cmd_line(self, cmd):
         # try:
+        result = subprocess.check_output(cmd, shell=True)
+        # except:
+        #     return None
+
         if six.PY2:
-            return subprocess.check_output(cmd, shell=True)
+            return result
         else:
-            return subprocess.check_output(cmd, shell=True).decode()
-            # except:
-            #     return None
+            return result.decode()
 
     def load_json(self, path):
         try:
@@ -131,8 +129,6 @@ class e_Stat_API_Adaptor:
             return None
 
     def get_all_data(self, statsDataId, next_key):
-        print('126 ' + self.path['tmp'] + self._['appId'] + statsDataId)
-        print('127', next_key)
         self.cache['tmp'] = self.path['tmp'] + '.'.join([self._['appId'], statsDataId, next_key, 'json'])
         # try:
         if os.path.exists(self.cache['tmp']) == False:
@@ -150,8 +146,7 @@ class e_Stat_API_Adaptor:
         return str(NEXT_KEY)
         # except:
         #     # 下記のエラー処理は考える
-        #     filepath = self.path[
-        #                    'tmp'] + '.'.join([self._['appId'], statsDataId, '*', 'json'])
+        #     filepath = self.path['tmp'] + '.'.join([self._['appId'], statsDataId, '*', 'json'])
         #     try:
         #         downloaded_files = self.cmd_line(
         #             self.build_cmd(['ls', filepath]))
@@ -189,8 +184,7 @@ class e_Stat_API_Adaptor:
             _h = {}
             _b = {}
             for o in dat['keys']['CLASS_OBJ']:
-                o['CLASS'] = [o['CLASS']] if (
-                                                 type(o['CLASS']) is list) is False else o['CLASS']
+                o['CLASS'] = [o['CLASS']] if (type(o['CLASS']) is list) is False else o['CLASS']
                 if o['@id'] not in _b.keys():
                     _b[o['@id']] = {}
                 for oc in o['CLASS']:

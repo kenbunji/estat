@@ -9,6 +9,7 @@ import six
 from tqdm import tqdm
 from builtins import bytes
 from builtins import dict
+from builtins import str
 
 from estat import e_Stat_API_Adaptor
 
