@@ -123,8 +123,12 @@ class e_Stat_API_Adaptor:
             #     return None
 
     def load_json(self, path):
-        with open(path) as json_data:
-            return json.load(json_data)
+        try:
+            with open(path) as json_data:
+                return json.load(json_data)
+        except:
+            print('File {} is collapsed. Remove the file.'.format(path))
+            return None
 
     def get_all_data(self, statsDataId, next_key):
         print('126 ' + self.path['tmp'] + self._['appId'] + statsDataId)
