@@ -1,4 +1,5 @@
 flask
+future
 numpy
 pandas
 six

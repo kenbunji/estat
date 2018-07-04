@@ -9,11 +9,18 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # #
 
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import csv
 import json
 import os
 import six
 import subprocess
+
+from builtins import bytes
+from builtins import dict
 
 
 class e_Stat_API_Adaptor:
@@ -64,11 +71,9 @@ class e_Stat_API_Adaptor:
     # ダウンロードした統計表からインデックスファイルを作成する
 
     def build_statid_index(self):
-        result_jd = self.load_json(
-            self.path['statid-json'])['GET_STATS_LIST']['RESULT']
-        print('Under download all ids, status code: {0} and message : {1}'.format(result_jd['STATUS'],
-                                                                                  result_jd['ERROR_MSG'].encode(
-                                                                                      'utf-8')))
+        result_jd = self.load_json(self.path['statid-json'])['GET_STATS_LIST']['RESULT']
+        print('Tried downloading all ids. Status code: {0} and message : {1}'.format(result_jd['STATUS'],
+                                                                                     result_jd['ERROR_MSG']))
         if result_jd['STATUS'] != 0:
             print('Error detected in loading all ids. Check appID.')
             return None
@@ -110,42 +115,47 @@ class e_Stat_API_Adaptor:
 
     def cmd_line(self, cmd):
         # try:
-        return subprocess.check_output(cmd, shell=True)
-        # except:
-        #     return None
+        if six.PY2:
+            return subprocess.check_output(cmd, shell=True)
+        else:
+            return subprocess.check_output(cmd, shell=True).decode()
+            # except:
+            #     return None
 
     def load_json(self, path):
         with open(path) as json_data:
             return json.load(json_data)
 
     def get_all_data(self, statsDataId, next_key):
+        print('126 ' + self.path['tmp'] + self._['appId'] + statsDataId)
+        print('127', next_key)
         self.cache['tmp'] = self.path['tmp'] + '.'.join([self._['appId'], statsDataId, next_key, 'json'])
-        try:
-            if os.path.exists(self.cache['tmp']) == False:
-                apiURI = self.build_uri({
-                    'appId': self._['appId'], 'statsDataId': statsDataId, 'limit': self._['limit'],
-                    'startPosition': next_key
-                })
-                self.make_dir(self.cache['tmp'])
-                self.cmd_line(self.build_cmd(
-                    ['curl', '-o', self.cache['tmp'], '"' + apiURI + '"'])).replace('\n', '')
-            RESULT_INF = self.load_json(self.cache['tmp'])['GET_STATS_DATA'][
-                'STATISTICAL_DATA']['RESULT_INF']
-            NEXT_KEY = '-1' if 'NEXT_KEY' not in RESULT_INF.keys() else RESULT_INF[
-                'NEXT_KEY']
-            return str(NEXT_KEY)
-        except:
-            # 下記のエラー処理は考える
-            filepath = self.path[
-                           'tmp'] + '.'.join([self._['appId'], statsDataId, '*', 'json'])
-            try:
-                downloaded_files = self.cmd_line(
-                    self.build_cmd(['ls', filepath]))
-                if downloaded_files != '':
-                    self.remove_file(filepath)
-                return None
-            except:
-                return None
+        # try:
+        if os.path.exists(self.cache['tmp']) == False:
+            apiURI = self.build_uri({
+                'appId': self._['appId'], 'statsDataId': statsDataId, 'limit': self._['limit'],
+                'startPosition': next_key
+            })
+            self.make_dir(self.cache['tmp'])
+            self.cmd_line(self.build_cmd(
+                ['curl', '-o', self.cache['tmp'], '"' + apiURI + '"'])).replace('\n', '')
+        RESULT_INF = self.load_json(self.cache['tmp'])['GET_STATS_DATA'][
+            'STATISTICAL_DATA']['RESULT_INF']
+        NEXT_KEY = '-1' if 'NEXT_KEY' not in RESULT_INF.keys() else RESULT_INF[
+            'NEXT_KEY']
+        return str(NEXT_KEY)
+        # except:
+        #     # 下記のエラー処理は考える
+        #     filepath = self.path[
+        #                    'tmp'] + '.'.join([self._['appId'], statsDataId, '*', 'json'])
+        #     try:
+        #         downloaded_files = self.cmd_line(
+        #             self.build_cmd(['ls', filepath]))
+        #         if downloaded_files != '':
+        #             self.remove_file(filepath)
+        #         return None
+        #     except:
+        #         return None
 
     def convert_raw_json_to_csv(self, statsDataId):
         try:
@@ -160,7 +170,7 @@ class e_Stat_API_Adaptor:
                 if f != ''
             ]
             ix.sort()
-            ix = [hash.values()[0] for hash in ix]
+            ix = [list(hash.values())[0] for hash in ix]
             for i, json_file in enumerate(ix):
                 jd = self.load_json(json_file)
                 if i == 0:
@@ -182,19 +192,26 @@ class e_Stat_API_Adaptor:
                 for oc in o['CLASS']:
                     _b[o['@id']][oc['@code']] = oc['@name']
                 _h[o['@id']] = o['@name']
-            newCSV = [[r.encode('utf-8') for r in [_h[h]
-                                                   if h in _h.keys() else h for h in dat['header']]]]
+            if six.PY2:
+                newCSV = [[r.encode('utf-8') for r in [_h[h] if h in _h.keys() else h for h in dat['header']]]]
+            else:
+                newCSV = [[r for r in [_h[h] if h in _h.keys() else h for h in dat['header']]]]
             newCSV.append(dat['header'])
             for body in dat['body']:
-                newCSV.append(body.values())
+                newCSV.append(list(body.values()))
             for i, x in enumerate(newCSV):
                 if i > 0:
                     for j, d in enumerate(x):
                         if dat['header'][j] in _b.keys() and d in _b[dat['header'][j]].keys():
-                            newCSV[i][j] = _b[dat['header'][j]][
-                                d].encode('utf-8')
+                            if six.PY2:
+                                newCSV[i][j] = _b[dat['header'][j]][d].encode('utf-8')
+                            else:
+                                newCSV[i][j] = _b[dat['header'][j]][d]
                         else:
-                            newCSV[i][j] = d.encode('utf-8')
+                            if six.PY2:
+                                newCSV[i][j] = d.encode('utf-8')
+                            else:
+                                newCSV[i][j] = d
             self.make_dir(self.cache['csv'])
             with open(self.cache['csv'], 'w') as f:
                 csv.writer(f, quoting=csv.QUOTE_NONNUMERIC).writerows(newCSV)
