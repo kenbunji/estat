@@ -1,6 +1,5 @@
 # estat
-Download data from Japanese Government Statistics and save it as CSV format files.
-
+Download data from Japanese Government Statistics and save it as CSV format files.  
 各府省等が公表する統計データがまとめられた政府統計の総合窓口（e－Stat）からデータをダウンロードし、CSV形式のファイルに出力します。
 
 # Install/インストール
