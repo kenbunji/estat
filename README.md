@@ -1,36 +1,49 @@
 # estat
 Download data from Japanese Government Statistics and save it as CSV format files.
-各府省等が公表する統計データがまとめられた政府統計の総合窓口（e－Stat）からデータをダウンロードし、CSV形式のファイルに保存します。
+
+各府省等が公表する統計データがまとめられた政府統計の総合窓口（e－Stat）からデータをダウンロードし、CSV形式のファイルに出力します。
+
+# Install/インストール
+
+```
+pip install estat
+```
 
 # How to use
-* First you must get appID from e-Stat site from here (https://www.e-stat.go.jp/).
+* First you must get appID from e-Stat site from here (https://www.e-stat.go.jp/).  
 まずe-Stat (https://www.e-stat.go.jp/)からappIDを取得します。
-* Next do the followings.
+* Next do the followings.  
 次に下記のコマンドを実行します。
+
 ```
 >>> import estat
 >>> estat.download()
 ```
-You can find csv format files in $HOME/estat/data-cache.
+You can find csv format files in $HOME/estat/data-cache.  
 $HOME/estat/data-cache ディレクトリにCSV形式のデータファイルが生成されます。
 
 If you want to change estat directory from $HOME/estat, do the following.
 ```
 >>> estat.download(directory='/home/hoge/data/estat/')
 ```
-If you cannot download the CSV format files,
+If you cannot download the CSV format files,  
 check the appID and curl settings in ~/.curlrc or /etc/.curlrc for your proxy server settings.
 ```
 $ cat proxy ~/.curlrc
 ```
 
+# Features
+
+* It works on Ubuntu/CentOS/Windows. 開発環境がWidowsしかないため仕方なくWindowsを使ってます
+* It works on Python 3/2
+
 # Author
-kenbunji
+kenbunji  
 https://github.com/kenbunji/estat
 
 # License
 Licensed under the MIT license.
 
 # Remarks
-This program is created referring to this site
+This program is created referring to this site  
 https://github.com/e-stat-api/adaptor
